@@ -167,6 +167,10 @@ def answer(question, rows, location_ids):
     return refuse("I can't tell whether you want a count, a list, or the total amount gap.")
 
 
+def _n(count):
+    return f"{count} exception{'' if count == 1 else 's'}"
+
+
 def _span(dates):
     if not dates:
         return "no dates"
@@ -181,12 +185,12 @@ def _count(rows, scope, grouped_by):
             groups.setdefault(key(r), []).append(r)
         facts = [{"label": k, "value": len(v), "cited_ids": _ids(v)} for k, v in sorted(groups.items())]
         lines = [f"- {f['label']}: {f['value']} ({', '.join(f['cited_ids'])})" for f in facts]
-        head = f"{len(rows)} exceptions{scope}, by {grouped_by}:"
+        head = f"{_n(len(rows))}{scope}, by {grouped_by}:"
         return {"answered": True, "answer": "\n".join([head] + lines) if facts else head + " none.",
                 "facts": facts}
     n = len(rows)
     return {"answered": True,
-            "answer": f"{n} exception{'s' if n != 1 else ''}{scope}: {_cite(rows)}.",
+            "answer": f"{_n(n)}{scope}: {_cite(rows)}.",
             "facts": [{"label": "exceptions", "value": n, "cited_ids": _ids(rows)}]}
 
 
@@ -195,7 +199,7 @@ def _list(rows, scope):
         return {"answered": True, "answer": f"No exceptions{scope}.", "facts": []}
     lines = [f"- {', '.join(r.source_ids())} at {r.location_id}: {REASONS[r.reason_code][0]}. {r.detail}"
              for r in rows]
-    return {"answered": True, "answer": f"{len(rows)} exceptions{scope}:\n" + "\n".join(lines),
+    return {"answered": True, "answer": f"{_n(len(rows))}{scope}:\n" + "\n".join(lines),
             "facts": [{"label": "exceptions", "value": len(rows), "cited_ids": _ids(rows)}]}
 
 

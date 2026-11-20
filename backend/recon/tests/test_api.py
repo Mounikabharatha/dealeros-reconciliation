@@ -119,6 +119,8 @@ class AskAnswers(ApiTestCase):
         res = self.ask("Which records are missing from System B?")
         self.assert_grounded(res)
         self.assertEqual(res["facts"][0]["cited_ids"], ["REC-1015"])
+        self.assertTrue(res["answer"].startswith("1 exception with"), res["answer"])
+        self.assertNotIn("1 exceptions", res["answer"])
 
     def test_amount_gap_cites_rows_and_admits_unknowns(self):
         res = self.ask("What is the total amount difference at LOC-101?")

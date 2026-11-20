@@ -69,7 +69,7 @@ function Ask() {
   return (
     <form onSubmit={submit} style={{ margin: "16px 0" }}>
       <label>
-        Ask about these exceptions{" "}
+        Ask about all your organisation's exceptions{" "}
         <input
           style={{ width: "28em", maxWidth: "100%" }}
           value={question}
