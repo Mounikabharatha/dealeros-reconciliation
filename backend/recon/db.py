@@ -55,7 +55,17 @@ def tenant_context(org_id):
         raise ValueError("tenant_context needs an org_id")
     with transaction.atomic():
         with connection.cursor() as cursor:
+            cursor.execute("SELECT current_setting('app.current_org', true)")
+            previous = cursor.fetchone()[0] or ""
             # is_local=true: the setting dies with the transaction, so it can
             # never leak into the next request that reuses this connection.
             cursor.execute("SELECT set_config('app.current_org', %s, true)", [org_id])
-        yield
+        try:
+            yield
+        finally:
+            # When nested inside a bigger transaction (a savepoint), "dies with
+            # the transaction" is not soon enough: restore the outer value now.
+            # On error the savepoint rollback restores it for us.
+            if not connection.needs_rollback:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT set_config('app.current_org', %s, true)", [previous])
