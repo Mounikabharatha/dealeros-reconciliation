@@ -9,7 +9,7 @@ Stack: Django 5.2 + PostgreSQL (required, for RLS) + React 18 (Vite).
 
 ## How to run it
 
-**You need:** Python 3.11+, Node 18+, and PostgreSQL 14+ running locally. The
+**You need:** Python 3.11+, Node 18+, and PostgreSQL 14+ running locally (tested on PostgreSQL 17, Python 3.11, Node 24). The
 Postgres user you connect as must be able to create a database and a role; the
 default user of a Homebrew / Postgres.app / apt install can.
 
@@ -50,7 +50,7 @@ export POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_USER=postgres POSTGRE
 export PGHOST=$POSTGRES_HOST PGUSER=$POSTGRES_USER PGPASSWORD=$POSTGRES_PASSWORD   # so createdb uses them too
 ```
 
-e.g. with Docker: `docker run -d --name dealeros-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16`, then the exports above.
+e.g. with Docker: `docker run -d --name dealeros-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16`, then the exports above. (These settings were tested against a fresh, empty PostgreSQL connected as `postgres` over TCP; the Docker command itself was not run, as Docker isn't installed on my machine.)
 
 ### The API
 
@@ -121,7 +121,4 @@ cross-org attempts, ask answers and refusals).
 
 ## How I worked with the agent
 
-<!-- Write this section in your own words before submitting: the reviewers read it closely
-     and will ask about it. The notes below are what actually happened in this build. -->
-
-I used Claude Code for most of the typing and set the order myself: isolation and its test first, then reconciliation, API, UI, docs. It saved the most time on boilerplate (Django, Vite, the table) and on cataloguing every planted problem in the 241 CSV rows before any matching rule was written. It was confidently wrong twice in the isolation code: it wrote a test claiming the app "cannot switch back to a privileged role", which is false when Django connects as a Postgres superuser and would only have passed because no `postgres` role exists on my machine; I caught that reading the test before running it, deleted it, and documented the limit (DECISIONS #2). Its first `tenant_context` also leaked the org past its block inside an outer transaction; the fail-closed test caught it (3 rows instead of 0), and the fix restores the previous value on exit. After that I re-ran the isolation suite with RLS commented out, to check each test fails for the right reason rather than passing by accident.
+I built this with Claude Code doing most of the writing: I gave it the brief and data, and it worked in the order isolation first, then reconciliation, API, UI and docs. It saved the most time on boilerplate (Django, Vite, the table) and on cataloguing every planted problem in the 241 CSV rows before any matching rule was written. It was confidently wrong twice in the isolation code: it wrote a test claiming the app "cannot switch back to a privileged role", which is false when Django connects as a Postgres superuser, so the test was deleted on review before it ever ran and the limit is documented in DECISIONS #2. Its first `tenant_context` also leaked the org past its block inside an outer transaction; the fail-closed test caught it (3 rows instead of 0), and the fix restores the previous value on exit. Because a test that passes by accident proves nothing, the isolation suite was then re-run with RLS commented out to confirm each test fails for the right reason (see WALKTHROUGH.md).
